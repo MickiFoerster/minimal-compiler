@@ -1,0 +1,53 @@
+%option noyywrap yylineno
+
+%x COMMENT
+
+%{
+#include <iostream>
+#include "yystype.h"
+#include "parser.tab.hpp"
+using namespace std;
+
+%}
+
+WS											[\t\ \n]+
+IDX											_([0-9]+|N|\{N[+-][0-9]\})
+LHS									        y{IDX}
+RHS									        f{IDX}\(x\)
+COND										c{IDX}
+
+%%
+
+"/*"										{ BEGIN(COMMENT); }
+<COMMENT>"*/"								{ BEGIN(INITIAL); }
+<COMMENT>([^*]|\n)+|.						{}
+<COMMENT><<EOF>>							{ yyerror("Unterminated comment"); return 0;}
+"//".*\n									{}
+{WS}										{}
+"S"										{  info("SEQSTMTS found"); return SEQSTMTS; }
+"while"									{  info("WHILE found"); return WHILE; }
+"do"									{  info("DO found"); return DO; }
+"end while"								{  info("ENDWHILE found"); return ENDWHILE; }
+"if"									{  info("IF found"); return IF; }
+"then"									{  info("THEN found"); return THEN; }
+"end if"								{  info("ENDIF found"); return ENDIF; }
+{COND}								{  
+										info("COND found: %s", yytext); 
+									   	yylval = new std::string(yytext);
+										return COND; 
+									}
+{LHS}								{  
+										info("LHS found: %s", yytext); 
+									   	yylval = new std::string(yytext);
+										return LHS; 
+									}
+{RHS}								{  
+										info("RHS found: %s", yytext); 
+									   	yylval = new string(yytext);
+										return RHS; 
+									}
+.									{  info("DEFAULT rule for char: '%c'", yytext[0]); return yytext[0]; }
+
+%%
+
+ 
